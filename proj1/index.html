@@ -104,9 +104,8 @@
         <hr>
         
         <h2>Multi-scale alignment</h2>
-        <p>To overcome the high computational cost of the single-scale approach on high-resolution images, I implemented a more efficient 
-            multi-scale alignment strategy using an image pyramid. An image pyramid represents the same image at multiple resolutions, 
-            creating a coarse-to-fine structure.</p>
+        <p>To overcome the high computational cost of the single-scale approach on high-resolution images, I implemented a more efficient <strong>multi-scale alignment</strong> strategy using an <strong>image pyramid</strong>. An image pyramid represents the same image at multiple resolutions, creating a coarse-to-fine structure.</p>
+        <p>The alignment process begins at the smallest scale (the top of the pyramid) to quickly find an initial, coarse displacement. This displacement is then scaled up (by a factor of 2) and used as a starting estimate for the next, larger scale. At each subsequent level of the pyramid, the algorithm only needs to perform a search in a very small local window to refine the estimate from the previous level. This process is repeated recursively until the final, precise alignment is determined on the full-resolution image. This coarse-to-fine method drastically reduces the search space, making the alignment of large images fast and computationally feasible.</p>
 
         <p>The alignment process begins at the smallest scale (the top of the pyramid) to quickly find an initial, coarse displacement. This displacement is then scaled up (by a factor of 2) and used as a starting estimate for the next, larger scale. At each subsequent level of the pyramid, the algorithm only needs to perform a search in a very small local window to refine the estimate from the previous level. This process is repeated recursively until the final, precise alignment is determined on the full-resolution image. This coarse-to-fine method drastically reduces the search space, making the alignment of large images fast and computationally feasible.</p>
         
