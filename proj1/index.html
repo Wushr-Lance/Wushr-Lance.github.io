@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 1: Images of the Russian Empire -- Colorizing the Prokudin-Gorskii Photo Collection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        img, .media-container {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            display: block;
+        }
+        .photo-pair {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        .photo-row {
+            display: flex;             /* This is the magic! It activates Flexbox layout. */
+            justify-content: space-around; /* Distributes space evenly between items */
+            align-items: flex-start;   /* Aligns items nicely at the top */
+            gap: 20px;                 /* Creates a 20px gap between each photo item */
+        }
+        .photo-item {
+            display: flex;
+            flex-direction: column; /* 让子元素（图片和文字）垂直堆叠 */
+            align-items: center;    /* 在水平方向上居中对齐所有子元素 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Project 1: Images of the Russian Empire -- Colorizing the Prokudin-Gorskii Photo Collection</h1>
+        
+        <h2>Introduction</h2>
+        <p>This project reconstructs full-color images from the historic Prokudin-Gorskii photo collection. 
+            Each photograph of the Russian Empire was originally captured on a glass plate as three separate grayscale exposures—one for each of 
+            the red, green, and blue color channels. Below is an example:</p>
+        <div class="photo-item">
+            <img src="./media/cathedral.jpg" alt="An example of historic Prokudin-Gorskii photo">
+            <p>An example of historic Prokudin-Gorskii photo</p>
+        </div>
+
+        <p>The primary technical challenge was to automatically align these three channels with pixel-level precision. 
+            To achieve this, we developed an algorithm that calculates the exact displacement vectors required to merge the channels into 
+            a single, vibrant color image. Below, you will find the results of this process, along with some explanations.</p>
+        
+        
+        <hr>
+
+        <h2>Single-scale alignment</h2>
+        <p>My basic alignment algorithm employs a single-scale exhaustive search to find the optimal (x, y) displacement vector 
+            between the color channels. For this method, I used the Green (G) channel as a reference and aligned the Red (R) and Blue (B) channels 
+            to it. The core of this approach is to test every possible pixel displacement within a predefined search window (e.g., [-15, 15] pixels 
+            in both the x and y directions). For each attempted displacement, a matching score is calculated to evaluate the alignment quality using 
+            the L2 norm, also known as the Sum of Squared Differences (SSD). This metric calculates the sum of the squared differences in intensity 
+            between all corresponding pixels, where a lower score indicates a better match.</p>
+        
+        <p>A core strategy in the alignment process is the use of center-region cropping. Specifically, when calculating the optimal displacement of 
+            the Red and Blue channels relative to the Green reference channel, the algorithm does not compare the entire images. Instead, it extracts 
+            only the clearest central portion of each channel to compute the matching metric (L2 norm).</p>
+        
+        <p>This cropping strategy is crucial because the outer regions of these early photographs often suffer from noise, blur, and distortions 
+            caused by imperfect lenses and plate degradation. By focusing only on the high-quality central area, we can avoid interference from 
+            this edge noise and compute a more precise and robust alignment. Finally, after the color image is generated, the code performs an 
+            overall crop to remove the colored fringes along the borders that result from slight misalignments, making the final product more 
+            aesthetically pleasing.</p>
+
+        <h3>Results</h3>
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/single-scale/great/great_cathedral.jpg" alt="1">
+                <!-- <p>Flattened (Distance + Zoom)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/single-scale/great/great_monastery.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/single-scale/great/great_tobolsk.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+        </div>
+
+        <hr>
+        
+        <h2>Multi-scale alignment</h2>
+        <p>To overcome the high computational cost of the single-scale approach on high-resolution images, I implemented a more efficient 
+            multi-scale alignment strategy using an image pyramid. An image pyramid represents the same image at multiple resolutions, 
+            creating a coarse-to-fine structure.</p>
+
+        <p>The alignment process begins at the smallest scale (the top of the pyramid) to quickly find an initial, coarse displacement. This displacement is then scaled up (by a factor of 2) and used as a starting estimate for the next, larger scale. At each subsequent level of the pyramid, the algorithm only needs to perform a search in a very small local window to refine the estimate from the previous level. This process is repeated recursively until the final, precise alignment is determined on the full-resolution image. This coarse-to-fine method drastically reduces the search space, making the alignment of large images fast and computationally feasible.</p>
+        
+        <h3>Results</h3>
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_cathedral.jpg" alt="1">
+                <!-- <p>Flattened (Distance + Zoom)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_monastery.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_tobolsk.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+        </div>
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_church.jpg" alt="1">
+                <!-- <p>Flattened (Distance + Zoom)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_emir.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_harvesters.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+        </div>
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_icon.jpg" alt="1">
+                <!-- <p>Flattened (Distance + Zoom)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_italil.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_lastochikino.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+        </div>
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_lugano.jpg" alt="1">
+                <!-- <p>Flattened (Distance + Zoom)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_melons.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_self_portrait.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+        </div>
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_siren.jpg" alt="1">
+                <!-- <p>Flattened (Distance + Zoom)</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_three_generations.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div>
+            <!-- <div class="photo-item">
+                <img src="./media/multi-scale/pyramid/pyramid_self_portrait.jpg" alt="1">
+                <!-- <p>Normal (Close-up)</p> -->
+            </div> -->
+        </div>
+
+    </div>
+</body>
+</html>
