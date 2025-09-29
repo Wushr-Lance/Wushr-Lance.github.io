@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 2: Fun with Filters and Frequencies</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        img, .media-container {
+            max-width: 100%;
+            height: auto;
+            margin: 10px 0;
+            display: block;
+        }
+        .photo-pair {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        .photo-row {
+            display: flex;             /* This is the magic! It activates Flexbox layout. */
+            justify-content: space-around; /* Distributes space evenly between items */
+            align-items: flex-start;   /* Aligns items nicely at the top */
+            gap: 20px;                 /* Creates a 20px gap between each photo item */
+        }
+        .photo-item {
+            flex-basis: 45%; 
+            display: flex;
+            flex-direction: column; /* 让子元素（图片和文字）垂直堆叠 */
+            align-items: center;    /* 在水平方向上居中对齐所有子元素 */
+        }
+        /* 新增的样式：用于限制单张图片的宽度，并使其居中 */
+        .photo-half-item {
+            /* 限制单张图片的容器宽度为父容器（container）的 50% */
+            max-width: 50%; 
+            /* 左右外边距自动，将整个 item 块居中 */
+            margin: 10px auto; 
+            
+            /* 确保图片和文字在容器内部水平居中 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 覆盖 .photo-half-item 内部的 img 样式 */
+        /* 这确保了图片能够填满 50% 的容器，同时保持自适应 */
+        .photo-half-item img {
+            max-width: 100%; /* 填满 photo-half-item 的 50% 空间 */
+            margin: 0;      /* 移除 img 自身的 auto margin，让父容器控制居中 */
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Project 2: Fun with Filters and Frequencies</h1>
+        
+        <h2>Part 1: Filters and Edges</h2>
+
+        <h3>Part 1.1: Convolutions From Scratch</h3>
+
+        <p>Below is my convolution Implementation.</p>
+
+        <hr>
+
+        <pre>
+            <code>
+def convolve_4_loop(image, kernel):
+    image_h, image_w = image.shape
+    kernel_h, kernel_w = kernel.shape
+
+    pad_h = kernel_h // 2
+    pad_w = kernel_w // 2
+
+    padded_image = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w)), mode='constant', constant_values=0)
+
+    output = np.zeros_like(image)
+
+    for h in range(image_h):
+        for w in range(image_w):
+            for i in range(kernel_h):
+                for j in range(kernel_w):
+                    output[h, w] += kernel[kernel_h - 1 - i, kernel_w - 1 - j] * padded_image[h+i, w+j]
+    return output
+
+def convolve_2_loop(image, kernel):
+    image_h, image_w = image.shape
+    kernel_h, kernel_w = kernel.shape
+
+    pad_h = kernel_h // 2
+    pad_w = kernel_w // 2
+
+    padded_image = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w)), mode='constant', constant_values=0)
+
+    kernel_flipped = np.flip(kernel, axis=(0, 1))
+
+    output = np.zeros_like(image)
+
+    for h in range(image_h):
+        for w in range(image_w):
+            output[h, w] += (padded_image[h : h+kernel_h, w : w+kernel_w] * kernel_flipped).sum()
+    return output
+
+            </code>
+        </pre>
+
+        <hr>
+
+        <p>Below are some output comparison. </p>
+        <p>All boundaries are handled by zero-padding, my convolution padding width/height is (kernel width/height // 2).</p>
+    
+        <!-- <div class="photo-item">
+            <img src="./media/1.1/selfie_gray.jpg" alt="My gray selfie photo">
+            <p>My gray selfie photo</p>
+        </div> -->
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/1.1/selfie_gray.jpg" alt="1">
+                <p>My gray selfie photo</p>
+            </div>
+            <div class="photo-item">
+                <img src="./media/1.1/4_loop_selfie_gray.jpg" alt="1">
+                <p>4-loop convolution</p>
+            </div>
+            <div class="photo-item">
+                <img src="./media/1.1/2_loop_selfie_gray.jpg" alt="1">
+                <p>2-loop convolution</p>
+            </div>
+        </div>
+
+        <!-- <div class="photo-row"> -->
+            <div class="photo-item">
+                <img src="./media/1.1/comparison_9*9 box filter.png" alt="1">
+                <!-- <p>My gray selfie photo</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/1.1/comparison_Dx Filter.png" alt="1">
+                <!-- <p>4-loop convolution</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/1.1/comparison_Dy Filter.png" alt="1">
+                <!-- <p>2-loop convolution</p> -->
+            </div>
+        <!-- </div> -->
+
+        <p>9*9 box filter: SciPy's convolve2d is approximately 18 times faster than my 2-loop convolution</p>
+        <p>Dx Filter: 238 times faster</p>
+        <p>Dy Filter: 158 times faster</p>
+        <p>From above, we could find Scipy's convolve2d is much faster on runtime!</p>
+        <p>Through <code>np.allclose</code>, the outputs for my convolution and Scipy's convolve2d are basically the same.</p>
+        
+        <hr>
+
+        <h3>Part 1.2: Finite Difference Operator</h3>
+
+        <p>
+            In computer vision, an edge is typically defined as a point where the intensity or color of an image changes sharply. To locate these edges, we need a way to measure this "change," and the <strong>image gradient</strong> is the perfect tool for this purpose. The gradient is a vector that points in the direction of the greatest rate of increase of image intensity, and its <strong>magnitude</strong> represents the strength of that change.
+        </p>
+        <p>
+            In this part of the project, we approximate the image gradient using the <strong>Finite Difference Operator</strong>. Specifically, we compute the gradient's components in the x and y directions—the <strong>partial derivatives</strong>—through two separate convolution operations:
+        </p>
+        <ul>
+            <li>Convolving the image with <code>D_x = [1, 0, -1]</code> yields the rate of intensity change in the horizontal direction (I_x), which helps identify vertical edges.</li>
+            <li>Convolving with <code>D_y = [[1], [0], [-1]]</code> yields the rate of change in the vertical direction (I_y), which helps identify horizontal edges.</li>
+        </ul>
+        <p>
+            Once we have these partial derivatives, we can compute the gradient magnitude at each pixel using the formula <code>G = sqrt(I_x^2 + I_y^2)</code>. The resulting gradient magnitude image highlights all potential edges with high intensity values.
+        </p>
+        <p>
+            Finally, to obtain a clean, binary edge map, we <strong>binarize</strong> the gradient magnitude image. By selecting an appropriate threshold, we classify all pixels with a magnitude above the threshold as edges (white) and those below it as non-edges (black). Choosing a good threshold is a trade-off between suppressing noise and preserving all genuine edges.
+        </p>
+
+        <!-- <div class="photo-row"> -->
+        <div class="photo-item">
+            <img src="./media/1.2/cameramanPD.png" alt="1">
+            <!-- <p>My gray selfie photo</p> -->
+        </div>
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/1.2/cameraman.png" alt="1">
+                <p>camera man</p>
+            </div>
+            <div class="photo-item">
+                <img src="./media/1.2/gradient_magnitude.jpg" alt="1">
+                <p>gradient magnitude</p>
+            </div>
+        </div>
+        <div class="photo-item">
+            <img src="./media/1.2/edgeImageComparison.png" alt="1">
+            <!-- <p>My gray selfie photo</p> -->
+        </div>
+
+        <p>After many tries and comparisons, I choose threshold = 0.15. And below is the final edge image.</p>
+
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/1.2/cameraman.png" alt="1">
+                <p>camera man</p>
+            </div>
+            <div class="photo-item">
+                <img src="./media/1.2/edge_image.jpg" alt="1">
+                <p>final binarized edge image</p>
+            </div>
+        </div>
+
+        <h3>Part 1.3 Derivative of Gaussian (DoG) Filter</h3>
+
+        <p>
+            In Part 1.2, we observed that applying the finite difference operator directly to the original image resulted in a significant amount of noise in the final edge map. This noise arises from minor, irrelevant textures and intensity fluctuations in the image, which are amplified by the difference operator and interfere with the detection of primary edges.
+        </p>
+        <p>
+            To address this, an intuitive solution is to first <strong>smooth</strong> the image to suppress noise and then perform edge detection. The Gaussian filter is an ideal tool for this, as it effectively removes high-frequency noise. Therefore, an improved two-step approach is: first, convolve the image with a Gaussian filter <code>G</code> (smoothing), and then convolve the smoothed result with the difference operator, such as <code>D_x</code> (differentiating).
+        </p>
+        <p>
+            However, thanks to the <strong>associative property of convolution</strong>, <code>(Image * G) * Dx = Image * (G * Dx)</code>, we can combine these two steps into a single, more efficient operation. We can pre-compute a new filter by convolving the Gaussian kernel <code>G</code> with the difference operator <code>D_x</code>. This new filter, which performs both smoothing and differentiation, is known as the <strong>"Derivative of Gaussian" (DoG) filter</strong>.
+        </p>
+        <p>
+            Applying the DoG filter directly to the original image yields a much cleaner and smoother edge detection result, as it inherently suppresses noise before computing the gradient. In this section, we will implement both the two-step method and the one-step DoG method, verify that they produce identical results, and compare this improved outcome to the noisy results from Part 1.2.
+        </p>
+        <div class="photo-half-item">
+            <img src="./media/1.3/2D_gaussian_filter.png" alt="1">
+            <!-- <p>camera man</p> -->
+        </div>
+        
+        <div class="photo-item">
+            <img src="./media/1.3/DoGFilter.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <p>Above is the visualization of 2D gaussian filter and DoG. Here is the comparison to the finite difference method:</p>
+
+        <div class="photo-item">
+            <img src="./media/1.3/edgeImageComparison.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <h2>Part 2: Fun with Frequencies</h2>
+
+        <h3>Part 2.1: Image "Sharpening"</h3>
+
+        <p>
+            The goal of image sharpening, the inverse of blurring, is to enhance the edges and details within an image to make it appear crisper. For this project, we implement a classic and powerful technique known as <strong>"Unsharp Masking"</strong>.
+        </p>
+        <p>
+            While the name may sound counter-intuitive, the core idea is straightforward. An image's smooth areas (like skin or sky) correspond to its <strong>"low-frequency"</strong> information, while its edges and textures correspond to its <strong>"high-frequency"</strong> information. A Gaussian filter, acting as a low-pass filter, effectively extracts these low-frequency components, resulting in a blurred image.
+        </p>
+        <p>
+            The unsharp masking technique leverages this by following these steps:
+        </p>
+        <ol>
+            <li>First, we isolate the high-frequency details by subtracting the blurred version of an image from the original. This layer of details is the "unsharp mask" itself.</li>
+            <li>Next, we amplify these extracted details by a factor, <code>alpha</code> (which controls the sharpening amount), and add them back to the original image.</li>
+            <li>This process is defined by the formula: <br>
+                <code>Sharpened Image = Original Image + alpha * (Original Image - Blurred Image)</code>
+            </li>
+        </ol>
+        <p>
+            For computational efficiency, this multi-step process can be consolidated into a single convolution operation. Through algebraic manipulation, we can derive a single "unsharp mask filter" represented by the formula <code>(1 + alpha) * e - alpha * G</code>, where <code>e</code> is the unit impulse filter and <code>G</code> is the Gaussian filter. Convolving the original image with this single filter produces the sharpened result in one efficient step.
+        </p>
+
+
+        <div class="photo-item">
+            <img src="./media/2.1/taj.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.1/tajVarying.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.1/stoneVarying.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.1/stone.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <h3>Part 2.2: Hybrid Images</h3>
+
+        <p>
+            Hybrid Images are fascinating static optical illusions that evoke different interpretations at different viewing distances. When viewed up close, the fine details of one image are prominent. As the viewer moves away, these details fade and a completely different image, typically the coarse structure of a second image, emerges. In this project, we recreate this effect, pioneered by Oliva, Torralba, and Schyns in their 2006 SIGGRAPH paper, by combining the frequency components of two separate images.
+        </p>
+        <p>
+            The core principle behind this phenomenon lies in the human visual system's perception of spatial frequencies. <strong>High-frequency</strong> information, such as sharp edges and textures, dominates our perception up close but attenuates quickly with distance. Conversely, <strong>low-frequency</strong> information, like the general shape and broad color regions, is more easily perceived from afar.
+        </p>
+        <p>
+            The process of creating a hybrid image leverages this principle by blending the high-frequency portion of one image with the low-frequency portion of another:
+        </p>
+        <ol>
+            <li>We begin with two aligned images that we want to blend.</li>
+            <li>One image, intended to be seen up close, is <strong>high-pass filtered</strong> to extract its fine details. This is typically achieved by subtracting a Gaussian-blurred version from the original.</li>
+            <li>The other image, intended to be seen from a distance, is <strong>low-pass filtered</strong> using a Gaussian blur to retain only its coarse, low-frequency structure.</li>
+            <li>Finally, these two filtered images are simply added together to create the final hybrid image. The key to a successful result lies in experimenting with the <strong>cutoff frequencies</strong> (i.e., the <code>sigma</code> values of the Gaussian kernels) for the high-pass and low-pass filters to achieve the optimal visual effect.</li>
+        </ol>
+
+        <hr>
+
+        <p>The two images below are Derek and his cat Nutmeg, and I'm gonna align the original images and hybrid them!</p>
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/2.2/DerekPicture.jpg" alt="1">
+                <!-- <p>camera man</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/nutmeg.jpg" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+        </div>
+
+        <p>Below is the hybrid result!</p>
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/2.2/derek_aligned.jpg" alt="1">
+                <!-- <p>camera man</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/nutmeg_aligned.jpg" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/hybrid1.png" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+        </div>
+
+        <p>The frequency visualization is as follow:</p>
+
+        <div class="photo-item">
+            <img src="./media/2.2/analysis.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <hr>
+
+        <p>Now, enjoy my other masterpieces for hybrid images!</p>
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/2.2/efros_aligned.jpg" alt="1">
+                <!-- <p>camera man</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/kanazawa_aligned.jpg" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/hybrid2.png" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+        </div>
+
+        <div class="photo-row">
+            <div class="photo-item">
+                <img src="./media/2.2/jiajie_aligned.jpg" alt="1">
+                <!-- <p>camera man</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/kyrie_aligned.jpg" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+            <div class="photo-item">
+                <img src="./media/2.2/hybrid3.png" alt="1">
+                <!-- <p>final binarized edge image</p> -->
+            </div>
+        </div>
+
+        <h3>Part 2.3 & 2,4: Gaussian and Laplacian Stacks & Multiresolution Blending</h3>
+
+        <p>
+            Simply pasting one image onto another often results in a sharp, artificial-looking seam. To create a seamless and visually pleasing blend, we implement <strong>Multiresolution Blending</strong>, a powerful technique introduced by Burt and Adelson in their 1983 paper. The core idea is not to blend the images all at once, but rather to compute a smooth transition separately within each frequency band and then combine the results.
+        </p>
+        <p>
+            To achieve this, we first need to decompose our images into different frequency bands. This is where <strong>Gaussian and Laplacian Stacks</strong> come into play.
+        </p>
+        <ul>
+            <li>A <strong>Stack</strong> is a multi-level representation of an image. Unlike a Pyramid, each level of a stack has the same dimensions as the original image, as no downsampling occurs.</li>
+            <li>A <strong>Gaussian Stack</strong> is created by progressively applying a Gaussian filter to an image. Each level represents a more blurred version of the previous one, capturing the image's low-frequency information.</li>
+            <li>A <strong>Laplacian Stack</strong> stores the band-pass filtered details of an image at different scales (e.g., edges and textures). It is constructed by taking the difference between adjacent levels of the Gaussian stack.</li>
+        </ul>
+        <p>
+            The multiresolution blending algorithm then proceeds as follows:
+        </p>
+        <ol>
+            <li>First, we build Laplacian stacks for the two input images we wish to blend (e.g., an apple and an orange).</li>
+            <li>Simultaneously, we build a Gaussian stack for a mask image that defines the blending region. This provides a set of smoothly varying weights for each level of the blend.</li>
+            <li>Then, at each level of the stacks, we perform a weighted average, using the Gaussian mask stack to linearly combine the corresponding levels of the two Laplacian stacks.</li>
+            <li>Finally, we reconstruct the final image by summing up all the levels of this new, blended Laplacian stack. The result is a perfectly seamless composite where the transition is imperceptible.</li>
+        </ol>
+
+        <hr>
+
+        <p>In the following, I'll visualize the entire progress for building "oraple"</p>
+        <div class="photo-item">
+            <img src="./media/2.4/gaussian_stack_apple.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.4/laplacian_stack_apple.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.4/gaussian_stack_orange.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.4/laplacian_stack_orange.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <hr>
+
+        <p>Start blending apple and orange using laplacian stacks of apple and orange, with the help of "mask"</p>
+
+        <div class="photo-item">
+            <img src="./media/2.4/recreation.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <hr>
+
+        <p>Now, enjoy the feast of my blending journey!</p>
+
+        <div class="photo-item">
+            <img src="./media/2.4/oraple.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+
+        <div class="photo-item">
+            <img src="./media/2.4/hemiter.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+        <div class="photo-item">
+            <img src="./media/2.4/handeye.png" alt="1">
+            <!-- <p>final binarized edge image</p> -->
+        </div>
+    </div>
+</body>
+</html>
