@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 3: (Auto)stitching and Photo Mosaics</title>
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']] // 启用 $...$ 作为行内公式分隔符
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* 新增: 允许内部元素相对它进行绝对定位 */
+        }
+        h1, h2, h3 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        /* 2. 定位和样式化右上角按钮 */
+        .top-right-button {
+            /* 定位 */
+            position: absolute;
+            top: 20px; /* 距离顶部 20px (与padding匹配) */
+            right: 20px; /* 距离右侧 20px (与padding匹配) */
+            
+            /* 视觉样式 */
+            display: inline-block;
+            padding: 5px 10px;
+            text-decoration: none;
+            color: #333;
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+        /* 1. 通用 Flex 容器，负责对齐和居中 */
+        .flexible-gallery {
+            display: flex;           /* 启用 Flexbox */
+            justify-content: center; /* 内部项目居中 */
+            flex-wrap: wrap;         /* 允许换行 */
+            margin: 20px auto;       /* 容器整体居中 */
+            max-width: 900px;        /* 限制最大宽度 */
+        }
+
+        /* 2. 内部图片项：只设置通用间距 */
+        .flexible-item {
+            margin: 10px;            /* 每个子项之间的通用间距 */
+            text-align: center;      /* 居中文本（如图片说明） */
+            /* 核心：这里不再设置 width 或 flex 属性！ */
+        }
+
+        /* 3. 确保图片比例和响应式 */
+        img {
+            max-width: 100%;        /* 确保图片不会溢出它自己的父容器 */
+            height: auto;           /* 保持长宽比例的关键 */
+            display: block;
+        }
+        /* ... 你的其他通用 CSS 样式保持不变 ... */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="top-right-button">Back to the main Projects page</a> 
+
+        <h1>Part A: Image Warping and Mosaicing</h1>
+        <h2>A.1: Shoot the Pictures</h2>
+        <p>
+            I've taken two sets of images with projective transformations between them(fixed center of projection, rotate camera)
+        </p>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.1/house1.jpg" alt="left image of the room No.1">
+                <p>left of room No.1</p>
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.1/house2.jpg" alt="right image of the room No.1">
+                <p>right of room No.1</p>
+            </div>
+        </div>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.1/room1.jpg" alt="left image of the room No.2">
+                <p>left of room No.2</p>
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.1/room2.jpg" alt="right image of the room No.2">
+                <p>right of room No.2</p>
+            </div>
+        </div>
+
+        <h2>A.2: Recover Homographies</h2>
+        <p>
+        To compute the homography matrix which satisfies $p' = Hp$,
+        we need to solve a system of linear equations derived from a set of $N$ point correspondences $(x_i, y_i) \to (x'_i, y'_i)$, where $N \ge 4$.
+
+        By setting the bottom-right element of $H$, $h_{33}$, to 1 for normalization, we can expand this matrix equation:
+        \[
+        \begin{pmatrix} x'w \\ y'w \\ w \end{pmatrix} = 
+        \begin{pmatrix}
+        h_{11} & h_{12} & h_{13} \\
+        h_{21} & h_{22} & h_{23} \\
+        h_{31} & h_{32} & 1
+        \end{pmatrix} 
+        \begin{pmatrix} x \\ y \\ 1 \end{pmatrix}
+        \]
+        This expansion yields two algebraic equations for each point correspondence:
+        \[
+        x' = \frac{h_{11}x + h_{12}y + h_{13}}{h_{31}x + h_{32}y + 1}
+        \]
+        \[
+        y' = \frac{h_{21}x + h_{22}y + h_{23}}{h_{31}x + h_{32}y + 1}
+        \]
+        To solve for the unknown parameters of $H$, we rearrange these equations into a linear system. For each correspondence, we get two linear equations:
+        \[
+        x'(h_{31}x + h_{32}y + 1) = h_{11}x + h_{12}y + h_{13} \implies h_{11}x + h_{12}y + h_{13} - h_{31}xx' - h_{32}yx' = x'
+        \]
+        \[
+        y'(h_{31}x + h_{32}y + 1) = h_{21}x + h_{22}y + h_{23} \implies h_{21}x + h_{22}y + h_{23} - h_{31}xy' - h_{32}yy' = y'
+        \]
+        This system is formulated in the standard linear form $Ah=b$, where $h$ is a vector containing the 8 unknown entries of the homography matrix:
+        \[
+        h = \begin{pmatrix} h_{11} \\ h_{12} \\ h_{13} \\ h_{21} \\ h_{22} \\ h_{23} \\ h_{31} \\ h_{32} \end{pmatrix}
+        \]
+        For each correspondence $i$, we construct two rows of the matrix $A$ and two entries of the vector $b$:
+        \[
+        A_i = \begin{pmatrix}
+        x_i & y_i & 1 & 0 & 0 & 0 & -x_i x'_i & -y_i x'_i \\
+        0 & 0 & 0 & x_i & y_i & 1 & -x_i y'_i & -y_i y'_i
+        \end{pmatrix}, 
+        \quad 
+        b_i = \begin{pmatrix} x'_i \\ y'_i \end{pmatrix}
+        \]
+        By stacking the equations for all $N$ correspondences, we form a $2N \times 8$ matrix $A$ and a $2N \times 1$ vector $b$. Since we use more than 4 points, this results in an overdetermined system that is solved for $h$ using the method of least-squares, i.e.
+        $$h=(A^TA)^{-1}A^Tb$$
+        </p>
+        <p>After we get $h$, we can get $H$.</p>
+        <p>Take and example set of images in A.1:</p>
+        <h3>Room No.1:</h3>
+        <p>Through <a href="https://pixspy.com" target="_blank">pixspy.com</a>, I found 8 correspondences: </p>
+        <ul>
+            <li>(895, 235) &lt;-> (107, 213)</li>
+            <li>(1177, 190) &lt;-> (389, 230)</li>
+            <li>(920, 561) &lt;-> (133, 575)</li>
+            <li>(1145, 590) &lt;-> (355, 590)</li>
+            <li>(901, 573) &lt;-> (108, 590)</li>
+            <li>(853, 609) &lt;-> (48, 636)</li>
+            <li>(1217, 667) &lt;-> (415, 656)</li>
+            <li>(1249, 97) &lt;-> (450, 164)</li>
+        </ul>
+        <p>Then I take the left image of room No.1 as reference, compute the homography matrix H that transforms points from the right image to the left image. The visualization of correspondences and recovered homography matrix are shown below:</p>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 60%;"> 
+                <img src="media/A.2/correspondences_visualization.jpg" alt="correspondences visualization">
+                <p>correspondences visualization of Room No.1</p>
+            </div>
+        </div>
+        <p>
+        $$H=\begin{pmatrix}
+        1.80929949 \times 10^{-1} & -1.32759446 \times 10^{-2} & 8.13073104 \times 10^2 \\
+        -3.14350225 \times 10^{-1} & 8.16403279 \times 10^{-1} & 7.71746241 \times 10^1 \\
+        -6.27943062 \times 10^{-4} & -2.71283982 \times 10^{-5} & 1.00000000
+        \end{pmatrix}$$
+        </p>
+
+        <h2>A.3: Warp the Images</h2>
+        <h3>Example 1:</h3>
+        <p>I rectificated the window in "house 1" image:</p>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.3/house1.jpg" alt="house 1">
+                <p>house 1</p>
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.3/house1_nn_image.jpg" alt="house 1 nn">
+                <p>house 1 NN</p>
+            </div>
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.3/house1_bilinear_image.jpg" alt="house 1 bilinear">
+                <p>house 1 Bilinear</p>
+            </div>
+        </div>
+        <h3>Example 2:</h3>
+        <p>I rectificated the notebook in "home 1" image:</p>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.3/home2_1.jpg" alt="home 1">
+                <p>home 1</p>
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.3/home2_1_nn_image.jpg" alt="home 1 nn">
+                <p>home 1 NN</p>
+            </div>
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.3/home2_1_bilinear_image.jpg" alt="home 1 bilinear">
+                <p>home 1 Bilinear</p>
+            </div>
+        </div>
+        <h3>Example 3:</h3>
+        <p>I rectificated the cover of the facial tissue:</p>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.3/home2_2.jpg" alt="home 2">
+                <p>home 2</p>
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.3/home2_2_nn_image.jpg" alt="home 2 nn">
+                <p>home 2 NN</p>
+            </div>
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.3/home2_2_bilinear_image.jpg" alt="home 2 bilinear">
+                <p>home 2 Bilinear</p>
+            </div>
+        </div>
+        <p>From above, especially the last two examples, we could see the quality of Bilinear Interpolation is much better than NN Interpolation. However, if you try to run the code, you'll find Bilinear takes longer time!</p>
+        <h2>A.4: Blend the Images into a Mosaic</h2>
+
+        <p>
+        Our overall workflow in part A.4 for creating the panorama began with <strong>image registration</strong>: first, we loaded the left, middle, and right source images and, using the middle image as a reference, calculated the <strong>homography matrices</strong> required to precisely align the left and right images into the middle image's coordinate space. Next, to determine the size of the final panorama, we calculated a <strong>global canvas size</strong> that could accommodate all content by transforming the corners of all source images, from which we also obtained an offset matrix for precise positioning. To achieve a seamless stitch, we generated a <strong>feathering mask</strong> for each source image, with a weight of 1 at the center that smoothly transitioned to 0 at the edges. Finally, we entered the <strong>blending stage</strong>: we warped each image and its corresponding mask onto the final canvas, accumulating the weighted pixel colors and the weights separately. After all images were processed, the final, smooth, and seamless panoramic mosaic was generated by <em>normalizing</em> the result, dividing the total accumulated color by the total accumulated weight.
+        </p>
+
+        <h3>Mosaic 1:</h3>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.4/home1_1.jpg" alt="home 1_1">
+                <!-- <p>home 2</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.4/home1_2.jpg" alt="home 1_2">
+                <!-- <p>home 2 NN</p> -->
+            </div>
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.4/home1_3.jpg" alt="home 1_3">
+                <!-- <p>home 2 Bilinear</p> -->
+            </div>
+        </div>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 100%;"> 
+                <img src="media/A.4/home1_pano.jpg" alt="home 1 panorama">
+                <!-- <p>home 2</p> -->
+            </div>
+        </div>
+
+        <h3>Mosaic 2:</h3>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.4/home2_1.jpg" alt="home 2_1">
+                <!-- <p>home 2</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.4/home2_2.jpg" alt="home 2_2">
+                <!-- <p>home 2 NN</p> -->
+            </div>
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.4/home2_3.jpg" alt="home 2_3">
+                <!-- <p>home 2 Bilinear</p> -->
+            </div>
+        </div>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 100%;"> 
+                <img src="media/A.4/home2_pano.jpg" alt="home 2 panorama">
+                <!-- <p>home 2</p> -->
+            </div>
+        </div>
+    </div>
+</body>
+</html>
