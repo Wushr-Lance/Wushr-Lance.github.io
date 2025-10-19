@@ -282,6 +282,157 @@
                 <!-- <p>home 2</p> -->
             </div>
         </div>
+
+        <h3>Mosaic 3:</h3>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 30%;"> 
+                <img src="media/A.4/home3_1.jpg" alt="home 3_1">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.4/home3_2.jpg" alt="home 3_2">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+            <div class="flexible-item" style="width: 30%;">
+                <img src="media/A.4/home3_3.jpg" alt="home 3_3">
+                <!-- <p>home 3 Bilinear</p> -->
+            </div>
+        </div>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 100%;"> 
+                <img src="media/A.4/home3_pano.jpg" alt="home 3 panorama">
+                <!-- <p>home 3</p> -->
+            </div>
+        </div>
+
+        <h1>Part B: Feature Matching for Autostitching</h1>
+        <h2>B.1: Harris Corner Detection</h2>
+
+        <p>First, we had to find stable and informative "anchor points" in the image, known as features. We employed the classic Harris Corner Detector to find these candidates. However, Harris corners tend to cluster densely in high-texture areas, which is not ideal for global matching.</p>
+        <p>To solve this, we implemented an algorithm called Adaptive Non-Maximal Suppression (ANMS). Instead of just picking the points with the strongest responses, ANMS calculates a "suppression radius" for each corner—this radius defines its minimum distance to another "stronger" corner. By selecting the points with the largest suppression radii, we successfully filtered for a smaller set of feature points that is exceptionally well-distributed spatially across the entire image, laying a solid foundation for robust matching.</p>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/B.1/before.png" alt="before">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/B.1/after.png" alt="after">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
+        <h2>B.2: Feature Descriptor Extraction</h2>
+
+        <p>After finding the keypoints, we needed to create a "fingerprint" for each one—a feature descriptor—so we could recognize it in the other image.</p>
+        <p>We extracted an 8x8 patch for each feature point. The key here is that this 8x8 patch was <em>not</em> sampled directly, but rather sub-sampled at intervals from a larger, blurred 40x40 window. This "blurred sampling" strategy makes the descriptor more robust to small localization errors. After extraction, we applied bias/gain normalization to each 8x8 descriptor (subtracting the mean and dividing by the standard deviation), ensuring our descriptors are invariant to changes in lighting and contrast.</p>
+        
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 100%;"> 
+                <img src="media/B.2/feature.png" alt="feature">
+                <!-- <p>home 3</p> -->
+            </div>
+        </div>
+
+        <h2>B.3: Feature Matching</h2>
+
+        <p>Now that we have keypoints and their respective "fingerprints" (descriptors) for both images, the next step is matching.</p>
+        <p>We adopted a highly effective and reliable strategy known as the "Ratio Test." For every descriptor in image 1, we find its two most similar descriptors in image 2 (the 1st and 2nd nearest neighbors). We only accept this match if the "best" match is <em>significantly better</em> than the "second-best" match. Specifically, we only consider it a unique and credible match if the ratio of the 1st-neighbor-distance to the 2nd-neighbor-distance is below a threshold (e.g., 0.7).</p>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 100%;"> 
+                <img src="media/B.3/match_feature.png" alt="feature match">
+                <!-- <p>home 3</p> -->
+            </div>
+        </div>
+
+        <h2>B.4: RANSAC for Robust Homography</h2>
+        <p>After the ratio test, we're left with a set of high-quality matches, but it still might contain a few incorrect "outliers." To calculate the precise geometric transformation (the Homography matrix H) between the two images, we implemented a 4-point RANSAC algorithm from scratch.</p>
+        <p>RANSAC (RANdom SAmple Consensus) works by:</p>
+        <ul>
+            <li><strong>RANdom SAmple</strong>: Randomly picking 4 matching pairs from the full set.</li>
+            <li><strong>Compute Model</strong>: Calculating a candidate H matrix from these 4 pairs.</li>
+            <li><strong>Verify (Consensus)</strong>: Testing this H matrix against all matches and counting how many pairs (called "inliers") fit this model.</li>
+            <li><strong>Iterate</strong>: We repeat this process thousands of times and ultimately keep the H matrix that had the most "inlier" support.</li>
+        </ul>
+        <p>This H matrix is the most robust transformation we can find. Finally, we use this H matrix to warp one of the images, perfectly aligning it with the second. We then blend them together, automatically generating a seamless panoramic image. We successfully used this pipeline to create several mosaic images.</p>
+    
+        <h3>Mosaic 1:</h3>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/A.4/home1_2.jpg" alt="home">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/A.4/home1_3.jpg" alt="home">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/B.4/manual1.png" alt="home">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/B.4/auto1.png" alt="home">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
+        <h3>Mosaic 2:</h3>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/A.4/home3_2.jpg" alt="home">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/A.4/home3_3.jpg" alt="home">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/B.4/manual2.png" alt="home">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/B.4/auto2.png" alt="home">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
+        <h3>Mosaic 3:</h3>
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/A.4/home2_1.jpg" alt="home">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/A.4/home2_2.jpg" alt="home">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/B.4/manual3.png" alt="home">
+                <!-- <p>home 3</p> -->
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/B.4/auto3.png" alt="home">
+                <!-- <p>home 3 NN</p> -->
+            </div>
+        </div>
+
     </div>
 </body>
 </html>
