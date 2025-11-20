@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project 4: Neural Radiance Field</title>
+    <script>
+        MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']] // 启用 $...$ 作为行内公式分隔符
+          }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* 新增: 允许内部元素相对它进行绝对定位 */
+        }
+        h1, h2, h3 {
+            color: #555;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        /* 2. 定位和样式化右上角按钮 */
+        .top-right-button {
+            /* 定位 */
+            position: absolute;
+            top: 20px; /* 距离顶部 20px (与padding匹配) */
+            right: 20px; /* 距离右侧 20px (与padding匹配) */
+            
+            /* 视觉样式 */
+            display: inline-block;
+            padding: 5px 10px;
+            text-decoration: none;
+            color: #333;
+            border: 1px solid #ccc;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+        /* 1. 通用 Flex 容器，负责对齐和居中 */
+        .flexible-gallery {
+            display: flex;           /* 启用 Flexbox */
+            justify-content: center; /* 内部项目居中 */
+            flex-wrap: wrap;         /* 允许换行 */
+            margin: 20px auto;       /* 容器整体居中 */
+            max-width: 900px;        /* 限制最大宽度 */
+        }
+
+        /* 2. 内部图片项：只设置通用间距 */
+        .flexible-item {
+            margin: 10px;            /* 每个子项之间的通用间距 */
+            text-align: center;      /* 居中文本（如图片说明） */
+            /* 核心：这里不再设置 width 或 flex 属性！ */
+        }
+
+        /* 3. 确保图片比例和响应式 */
+        img {
+            max-width: 100%;        /* 确保图片不会溢出它自己的父容器 */
+            height: auto;           /* 保持长宽比例的关键 */
+            display: block;
+        }
+        /* ... 你的其他通用 CSS 样式保持不变 ... */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="top-right-button">Back to the main Projects page</a> 
+
+        <h1>Part 0: Camera Calibration and 3D Scanning</h1>
+
+        <p>
+            There are two screenshots of my camera frustums visualization in Viser:
+        </p>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/part0/screenshot1.png" alt="">
+            </div>
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/part0/screenshot2.png" alt="">
+            </div>
+        </div>
+
+        <h1>Part 1: Fit a Neural Field to a 2D Image</h1>
+
+        <h2>Model Architecture</h2>
+
+
+        <p>
+            My model is an 4-layer MLP with width = 256. For a normalized 2D coordinate $(x, y) \in [0, 1]^2$, the encoding is
+        </p>
+        $$
+        \phi(x, y) = \left[x, y, \left\{\sin(2^k\pi x), \cos(2^k\pi x), \sin(2^k\pi y), \cos(2^k\pi y)\right\}_{k=0}^{L-1}\right],
+        $$
+        <p>
+            which gives an input feature dimension of $2 + 4L$ (e.g., $L=10 \Rightarrow 42$ dims). I train with Adam ($\mathrm{lr} = 1\mathrm{e}{-2}$), batch size $= 10,000$, and $2\mathrm{k}$ iterations, reporting PSNR during training.
+        </p>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 70%;"> 
+                <img src="media/part1/mlp_img.jpg" alt="">
+                <p>2D Nerf Model Architecture</p>
+            </div>
+        </div>
+
+        <h2>Training Progress</h2>
+
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 15%;"> 
+                <img src="media/part1/fox_L=10_W=256/iter_0001.png" alt="">
+                <p>iteration = 1</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/fox_L=10_W=256/iter_0500.png" alt="">
+                <p>iteration = 500</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/fox_L=10_W=256/iter_1000.png" alt="">
+                <p>iteration = 1000</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/fox_L=10_W=256/iter_1500.png" alt="">
+                <p>iteration = 1500</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/fox_L=10_W=256/iter_2000.png" alt="">
+                <p>iteration = 2000</p>
+            </div>
+        </div>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 15%;"> 
+                <img src="media/part1/car_L=10_W=256/iter_0001.png" alt="">
+                <p>iteration = 1</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/car_L=10_W=256/iter_0500.png" alt="">
+                <p>iteration = 500</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/car_L=10_W=256/iter_1000.png" alt="">
+                <p>iteration = 1000</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/car_L=10_W=256/iter_1500.png" alt="">
+                <p>iteration = 1500</p>
+            </div>
+
+            <div class="flexible-item" style="width: 15%;">
+                <img src="media/part1/car_L=10_W=256/iter_2000.png" alt="">
+                <p>iteration = 2000</p>
+            </div>
+        </div>
+
+        <h2>Hyperparameter Tuning</h2>
+        
+        <p>
+            I tried max positional encoding frequency = 2 and 10, and width = 64 and 256, to do the comparison. Here are the 2x2 grid of results (iteration = 2000):
+        </p>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/part1/fox_L=2_W=64/iter_2000.png" alt="">
+                <p>L = 2, Width = 64</p>
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/part1/fox_L=2_W=256/iter_2000.png" alt="">
+                <p>L = 2, Width = 256</p>
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/part1/fox_L=10_W=64/iter_2000.png" alt="">
+                <p>L = 10, Width = 64</p>
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/part1/fox_L=10_W=256/iter_2000.png" alt="">
+                <p>L = 10, Width = 256</p>
+            </div>
+        </div>
+
+        <p>
+            From the results above, we could find that the low values of "L" and "width" will decrease the quality of reconstructed results.
+        </p>
+
+        <h2>PSNR curve</h2>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/part1/fox_L=10_W=256/psnr_curve.png" alt="">
+                <p>fox PSNR curve</p>
+            </div>
+
+            <div class="flexible-item" style="width: 40%;">
+                <img src="media/part1/car_L=10_W=256/psnr_curve.png" alt="">
+                <p>car PSNR curve</p>
+            </div>
+        </div>
+
+
+        <h1>Part 2: Fit a Neural Field to a 2D Image</h1>
+
+        <h2>Core Implementation</h2>
+
+        <h3>Ray Generation</h3>
+        <ul>
+            <li>
+                <strong>Camera-to-World Transform:</strong> Implemented the $x_w = \text{transform}(c2w, x_c)$ function, transforming points from camera to world coordinates using the $c2w$ matrix.
+            </li>
+            <li>
+                <strong>Pixel Un-projection:</strong> Implemented $\text{pixel-to-camera}(K, uv, s)$ to un-project pixel coordinates $uv$ and depth $s$ back to 3D camera coordinates.
+            </li>
+            <li>
+                <strong>Ray Definition:</strong> The final $\text{pixel-to-ray}$ function calculates the ray origin $r_o$ (as the translation vector $t$) and ray direction $r_d$ (using the rotation component $R$ acting on the un-projected pixel vector).
+            </li>
+        </ul>
+
+        <h3>Sampling Mechanism</h3>
+        <ul>
+            <li>
+                <strong>Ray Sampling:</strong> I used a Global Sampling Strategy, pre-calculating and flattening all ray origins, directions, and corresponding colors from the entire multi-view dataset.
+            </li>
+            <li>
+                <strong>Point Sampling:</strong> Implemented point sampling uniformly between $near=2.0$ and $far=6.0$. A random perturbation was added during training to cover the entire volume of the ray.
+            </li>
+        </ul>
+
+        <h3>NeRF Network Architecture</h3>
+        <ul>
+            <li>
+                <strong>Inputs/Encoding:</strong> Inputs are 3D space coordinates $x$ (PE: $L=10$) and 3D view directions $r_d$ (PE: $L=4$).
+            </li>
+            <li>
+                <strong>Core MLP:</strong> A deeper 8-layer MLP (Width 256) was used, incorporating a Skip Connection after the 4th layer to re-inject the PE of $x$.
+            </li>
+            <li>
+                <strong>Output Heads:</strong> The network outputs Density $\sigma$ (via ReLU) and Color $c$ (via Sigmoid).
+            </li>
+        </ul>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 100%;"> 
+                <img src="media/part2/nerf_arc.png" alt="">
+                <p>3D Nerf Model Architecture</p>
+            </div>
+        </div>
+
+        <h3>Volume Rendering</h3>
+        <ul>
+            <li>
+                <strong>Discrete Integration:</strong> Implemented the discrete volume rendering equation, aggregating density and color predictions along the ray.
+            </li>
+            <li>
+                <strong>Critical Calculation:</strong> Key steps involve calculating Transmittance $T_i$ and Opacity $\alpha_i$. I utilized <code>torch.cumsum</code> for the efficient calculation of the accumulated opacity in the exponent of $T_i$.
+            </li>
+        </ul>
+
+        <h2>Visualization of rays and samples with cameras</h2>
+
+        <p>
+            I visualized rays (up to 100) and samples with only one camera sequentially for easily debugging:
+        </p>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/part2/rays_samples_1.png" alt="">
+                <p>rays and samples view 1</p>
+            </div>
+            <div class="flexible-item" style="width: 40%;"> 
+                <img src="media/part2/rays_samples_2.png" alt="">
+                <p>rays and samples view 2</p>
+            </div>
+        </div>
+
+        <h2>Training Progress</h2>
+
+        <p>
+            I train with Adam ($\mathrm{lr} = 5\mathrm{e}{-4}$), batch size $= 10,000$, and $2\mathrm{k}$ iterations, reporting PSNR (on validation set) during training.
+        </p>
+
+        <p>
+            Here are the visualization of training progress with predicted images across iterations:
+        </p>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/nerf_lego_training/val_iter_0400_psnr_21.15.png" alt="">
+                <p>iteration = 400</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/nerf_lego_training/val_iter_0800_psnr_22.83.png" alt="">
+                <p>iteration = 800</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/nerf_lego_training/val_iter_1200_psnr_23.97.png" alt="">
+                <p>iteration = 1200</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/nerf_lego_training/val_iter_1600_psnr_24.47.png" alt="">
+                <p>iteration = 1600</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/nerf_lego_training/val_iter_2000_psnr_24.97.png" alt="">
+                <p>iteration = 2000</p>
+            </div>
+        </div>
+
+        <h2>PSNR curve on the validation set</h2>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 80%;"> 
+                <img src="media/part2/nerf_lego_training/training_curves.png" alt="">
+                <p></p>
+            </div>
+        </div>
+
+        <h2>Spherical rendering video of the Lego</h2>
+        <div class="flexible-gallery">
+            <div class="flexible-item">
+                <video width="450" height="auto" controls>
+                    <source src="media/part2/nerf_lego_training/lego_spiral.mp4" type="video/mp4">
+                </video>
+                <p>iteration = 2000</p>
+            </div>
+        </div>
+
+        <h1>Part 2.6: Train with Your Own Data</h1>
+
+        <h2>Spherical rendering video</h2>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item">
+                <video width="450" height="auto" controls>
+                    <source src="media/part2/backup/my_data_spiral.mp4" type="video/mp4">
+                </video>
+                <p>iteration = 2000</p>
+            </div>
+        </div>
+
+        <h2>Discussion of hyperparameter changes</h2>
+
+        <p>I think the most important hyperparameter to tune is the NEAR and FAR. However, though I've tried so many times and even ran out of my colab pro compute units, I still can't find one perfect pair that is able to reconstruct my data on nerf. The final result I put here is NEAR = 0.1, FAR = 1. I'm really sorry I've tried with all my might and I don't think my data has problem, cuz I've checked it so many times. Really sorry about that!</p>
+
+        <h2>Plot of training loss over iterations</h2>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 80%;"> 
+                <img src="media/part2/backup/training_curves.png" alt="">
+                <p></p>
+            </div>
+        </div>
+
+        <h2>Intermediate renders of the scene during training</h2>
+
+        <div class="flexible-gallery">
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/backup/val_iter_0400_psnr_10.16.png" alt="">
+                <p>iteration = 400</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/backup/val_iter_0800_psnr_10.14.png" alt="">
+                <p>iteration = 800</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/backup/val_iter_1200_psnr_9.98.png" alt="">
+                <p>iteration = 1200</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/backup/val_iter_1600_psnr_9.72.png" alt="">
+                <p>iteration = 1600</p>
+            </div>
+            <div class="flexible-item" style="width: 20%;"> 
+                <img src="media/part2/backup/val_iter_2000_psnr_9.51.png" alt="">
+                <p>iteration = 2000</p>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
